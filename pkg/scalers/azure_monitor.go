@@ -16,7 +16,6 @@ import (
 type azureExternalMetricRequest struct {
 	MetricName                string
 	SubscriptionID            string
-	Type                      string
 	ResourceName              string
 	ResourceProviderNamespace string
 	ResourceType              string
@@ -24,8 +23,6 @@ type azureExternalMetricRequest struct {
 	Timespan                  string
 	Filter                    string
 	ResourceGroup             string
-	Topic                     string
-	Subscription              string
 }
 
 type azureExternalMetricResponse struct {
@@ -49,32 +46,27 @@ func GetAzureMetricValue(ctx context.Context, metricMetadata *azureMonitorMetada
 	metricsClient := newMonitorClient(metricMetadata)
 
 	metricRequest := azureExternalMetricRequest{
+		MetricName:     metricMetadata.name,
 		SubscriptionID: metricMetadata.subscriptionID,
+		Aggregation:    metricMetadata.aggregationType,
+		Filter:         metricMetadata.filter,
+		ResourceGroup:  metricMetadata.resourceGroupName,
 	}
 
-	metricRequest.MetricName = metricMetadata.name
-	metricRequest.ResourceGroup = metricMetadata.resourceGroupName
 	resourceInfo := strings.Split(metricMetadata.resourceURI, "/")
-
-	if len(resourceInfo) != 3 {
-		return -1, fmt.Errorf("resourceURI is missing resource namespace, resource type, or resource name")
-	}
-
 	metricRequest.ResourceProviderNamespace = resourceInfo[0]
 	metricRequest.ResourceType = resourceInfo[1]
 	metricRequest.ResourceName = resourceInfo[2]
 
-	metricRequest.Aggregation = metricMetadata.aggregationType
-
 	// if no timespan is provided, defaults to 5 minutes
-	metricRequest.Timespan = formatTimeSpan(metricMetadata.aggregationInterval)
-
-	filter := metricMetadata.filter
-	if filter != "" {
-		metricRequest.Filter = filter
+	timespan, err := formatTimeSpan(metricMetadata.aggregationInterval)
+	if err != nil {
+		return -1, err
 	}
 
-	return -1, fmt.Errorf("MetricName %s: , ResourceGroup: %s, Namespace: %s, ResourceType: %s, ResourceName: %s, Aggregation: %s, Timespan: %s, Filter: %s", metricRequest.MetricName, metricRequest.ResourceGroup, metricRequest.ResourceProviderNamespace, metricRequest.ResourceType, metricRequest.ResourceName, metricRequest.Aggregation, metricRequest.Timespan, metricRequest.Filter)
+	metricRequest.Timespan = timespan
+
+	//return -1, fmt.Errorf("MetricName %s: , ResourceGroup: %s, Namespace: %s, ResourceType: %s, ResourceName: %s, Aggregation: %s, Timespan: %s, Filter: %s", metricRequest.MetricName, metricRequest.ResourceGroup, metricRequest.ResourceProviderNamespace, metricRequest.ResourceType, metricRequest.ResourceName, metricRequest.Aggregation, metricRequest.Timespan, metricRequest.Filter)
 
 	metricResponse, err := metricsClient.getAzureMetric(metricRequest)
 	if err != nil {
@@ -92,10 +84,8 @@ func newMonitorClient(metadata *azureMonitorMetadata) azureExternalMetricClient 
 	client := insights.NewMetricsClient(metadata.subscriptionID)
 	config := auth.NewClientCredentialsConfig(metadata.clientID, metadata.clientPassword, metadata.tentantID)
 
-	authorizer, err := config.Authorizer()
-	if err == nil {
-		client.Authorizer = authorizer
-	}
+	authorizer, _ := config.Authorizer()
+	client.Authorizer = authorizer
 
 	return &monitorClient{
 		client: client,
@@ -196,19 +186,21 @@ func (amr azureExternalMetricRequest) metricResourceURI() string {
 		amr.ResourceName)
 }
 
-func formatTimeSpan(timeSpan string) string {
+func formatTimeSpan(timeSpan string) (string, error) {
 	// defaults to last five minutes.
-	// TODO support configuration via config
 	endtime := time.Now().UTC().Format(time.RFC3339)
 	starttime := time.Now().Add(-(5 * time.Minute)).UTC().Format(time.RFC3339)
 	if timeSpan != "" {
 		aggregationInterval := strings.Split(timeSpan, ":")
-		hours, _ := strconv.Atoi(aggregationInterval[0])
-		minutes, _ := strconv.Atoi(aggregationInterval[1])
-        seconds, _ := strconv.Atoi(aggregationInterval[2])
+		hours, herr := strconv.Atoi(aggregationInterval[0])
+		minutes, merr := strconv.Atoi(aggregationInterval[1])
+		seconds, serr := strconv.Atoi(aggregationInterval[2])
 
-        strings.ReplaceAll()
-		starttime = time.Now().Add(-(time.Duration(minutes) * time.Minute)).UTC().Format(time.RFC3339)
+		if herr != nil || merr != nil || serr != nil {
+			return "", fmt.Errorf("Errors parsing metricAggregationInterval: %v, %v, %v", herr, merr, serr)
+		}
+
+		starttime = time.Now().Add(-(time.Duration(hours)*time.Hour + time.Duration(minutes)*time.Minute + time.Duration(seconds)*time.Second)).UTC().Format(time.RFC3339)
 	}
-	return fmt.Sprintf("%s/%s", starttime, endtime)
+	return fmt.Sprintf("%s/%s", starttime, endtime), nil
 }
