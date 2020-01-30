@@ -70,16 +70,18 @@ func parseAzureMonitorMetadata(metadata, resolvedEnv, authParams map[string]stri
 		return nil, fmt.Errorf("no resourceURI given")
 	}
 
-	if val, ok := metadata["tenantId"]; ok && val != "" {
-		meta.tentantID = val
-	} else {
-		return nil, fmt.Errorf("no tenantId given")
+	// required if no TriggerAuth is provided
+	if val, ok := metadata["tenantId"]; ok {
+		if val != "" {
+			meta.tentantID = val
+		}
 	}
 
-	if val, ok := metadata["subscriptionId"]; ok && val != "" {
-		meta.subscriptionID = val
-	} else {
-		return nil, fmt.Errorf("no subscriptionId given")
+	// required if no TriggerAuth is provided
+	if val, ok := metadata["subscriptionId"]; ok {
+		if val != "" {
+			meta.subscriptionID = val
+		}
 	}
 
 	if val, ok := metadata["resourceGroupName"]; ok && val != "" {
@@ -116,16 +118,18 @@ func parseAzureMonitorMetadata(metadata, resolvedEnv, authParams map[string]stri
 		}
 	}
 
+	// required if no TriggerAuth is provided
 	if val, ok := metadata["activeDirectoryClientId"]; ok && val != "" {
-		meta.clientID = val
-	} else {
-		return nil, fmt.Errorf("no activeDirectoryClientId given")
+		if val != "" {
+			meta.clientID = val
+		}
 	}
 
+	// required if no TriggerAuth is provided
 	if val, ok := metadata["activeDirectoryClientPassword"]; ok && val != "" {
-		meta.clientPassword = val
-	} else {
-		return nil, fmt.Errorf("no activeDirectoryClientPassword given")
+		if val != "" {
+			meta.clientPassword = val
+		}
 	}
 
 	return &meta, nil
