@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -48,7 +49,6 @@ func GetAzureMetricValue(ctx context.Context, metricMetadata *azureMonitorMetada
 	metricsClient := newMonitorClient(metricMetadata)
 
 	metricRequest := azureExternalMetricRequest{
-		Timespan:       timeSpan(),
 		SubscriptionID: metricMetadata.subscriptionID,
 	}
 
@@ -66,20 +66,19 @@ func GetAzureMetricValue(ctx context.Context, metricMetadata *azureMonitorMetada
 
 	metricRequest.Aggregation = metricMetadata.aggregationType
 
+	// if no timespan is provided, defaults to 5 minutes
+	metricRequest.Timespan = formatTimeSpan(metricMetadata.aggregationInterval)
+
 	filter := metricMetadata.filter
 	if filter != "" {
 		metricRequest.Filter = filter
 	}
 
-	aggregationInterval := metricMetadata.aggregationInterval
-	if aggregationInterval != "" {
-		metricRequest.Timespan = aggregationInterval
-	}
+	return -1, fmt.Errorf("MetricName %s: , ResourceGroup: %s, Namespace: %s, ResourceType: %s, ResourceName: %s, Aggregation: %s, Timespan: %s, Filter: %s", metricRequest.MetricName, metricRequest.ResourceGroup, metricRequest.ResourceProviderNamespace, metricRequest.ResourceType, metricRequest.ResourceName, metricRequest.Aggregation, metricRequest.Timespan, metricRequest.Filter)
 
 	metricResponse, err := metricsClient.getAzureMetric(metricRequest)
 	if err != nil {
 		azureMonitorLog.Error(err, "error getting azure monitor metric")
-		//return -1, fmt.Errorf("MetricName %s: , ResourceGroup: %s, Namespace: %s, ResourceType: %s, ResourceName: %s, Aggregation: %s, Timespan: %s", metricRequest.MetricName, metricRequest.ResourceGroup, metricRequest.ResourceProviderNamespace, metricRequest.ResourceType, metricRequest.ResourceName, metricRequest.Aggregation, metricRequest.Timespan)
 		return -1, fmt.Errorf("Error getting azure monitor metric %s: %s", metricRequest.MetricName, err.Error())
 	}
 
@@ -197,10 +196,19 @@ func (amr azureExternalMetricRequest) metricResourceURI() string {
 		amr.ResourceName)
 }
 
-func timeSpan() string {
+func formatTimeSpan(timeSpan string) string {
 	// defaults to last five minutes.
 	// TODO support configuration via config
 	endtime := time.Now().UTC().Format(time.RFC3339)
 	starttime := time.Now().Add(-(5 * time.Minute)).UTC().Format(time.RFC3339)
+	if timeSpan != "" {
+		aggregationInterval := strings.Split(timeSpan, ":")
+		hours, _ := strconv.Atoi(aggregationInterval[0])
+		minutes, _ := strconv.Atoi(aggregationInterval[1])
+        seconds, _ := strconv.Atoi(aggregationInterval[2])
+
+        strings.ReplaceAll()
+		starttime = time.Now().Add(-(time.Duration(minutes) * time.Minute)).UTC().Format(time.RFC3339)
+	}
 	return fmt.Sprintf("%s/%s", starttime, endtime)
 }
