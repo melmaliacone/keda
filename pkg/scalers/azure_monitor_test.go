@@ -6,10 +6,7 @@ import (
 )
 
 var testAzMonitorResolvedEnv = map[string]string{
-    "tenantId": "xxx",
-    "subscriptionId": "yyy",
-    "activeDirectoryClientId": "zzz",
-    "activeDirectoryClientPassword": "www",
+	"XXX": "xxx",
 }
 
 type parseAzMonitorMetadataTestData struct {
@@ -24,12 +21,12 @@ var testParseAzMonitorMetadata = []parseAzMonitorMetadataTestData{
 	{map[string]string{}, true, testAzMonitorResolvedEnv, map[string]string{}},
 	// properly formed
 	{map[string]string{"resourceURI": "test/resource/uri", "tenantId": "123", "subscriptionId": "456", "resourceGroupName": "test", "metricName": "metric", "metricAggregationInterval": "0:15:0", "metricAggregationType": "Average", "activeDirectoryClientId": "789", "activeDirectoryClientPassword": "1234", "targetValue": "5"}, false, testAzMonitorResolvedEnv, map[string]string{}},
-    // no optional parameters
-	{map[string]string{resourceURI: "test/resource/uri", tenantID: "123", subscriptionID: "456", resourceGroupName: "test", name: "metric", aggregationType: "Average", clientID: "789", clientPassword: "1234", targetValue: 5}, false, testAzMonitorResolvedEnv, map[string]string{}},
-    // incorrectly formatted resourceURI
+	// no optional parameters
+	{map[string]string{"resourceURI": "test/resource/uri", "tenantId": "123", "subscriptionId": "456", "resourceGroupName": "test", "metricName": "metric", "metricAggregationType": "Average", "activeDirectoryClientId": "789", "activeDirectoryClientPassword": "1234", "targetValue": "5"}, false, testAzMonitorResolvedEnv, map[string]string{}},
+	// incorrectly formatted resourceURI
 	{map[string]string{"resourceURI": "bad/format", "tenantId": "123", "subscriptionId": "456", "resourceGroupName": "test", "metricName": "metric", "metricAggregationInterval": "0:15:0", "metricAggregationType": "Average", "activeDirectoryClientId": "789", "activeDirectoryClientPassword": "1234", "targetValue": "5"}, true, testAzMonitorResolvedEnv, map[string]string{}},
 	// improperly formatted aggregationInterval
-	{map[string]string{"resourceURI": "test/resource/uri", "tenantId": "123", "subscriptionId": "456", "resourceGroupName": "test", "metricName": "metricAggregationInterval": "0:1", "metricAggregationType": "Average", "activeDirectoryClientId": "789", "activeDirectoryClientPassword": "1234", "targetValue": "5"}, true, testAzMonitorResolvedEnv, map[string]string{}},
+	{map[string]string{"resourceURI": "test/resource/uri", "tenantId": "123", "subscriptionId": "456", "resourceGroupName": "test", "metricName": "metric", "metricAggregationInterval": "0:1", "metricAggregationType": "Average", "activeDirectoryClientId": "789", "activeDirectoryClientPassword": "1234", "targetValue": "5"}, true, testAzMonitorResolvedEnv, map[string]string{}},
 	// missing resourceURI
 	{map[string]string{"tenantId": "123", "subscriptionId": "456", "resourceGroupName": "test", "metricName": "metric", "metricAggregationInterval": "0:15:0", "metricAggregationType": "Average", "activeDirectoryClientId": "789", "activeDirectoryClientPassword": "1234", "targetValue": "5"}, true, testAzMonitorResolvedEnv, map[string]string{}},
 	// missing tenantID
@@ -73,19 +70,19 @@ type getAzMonitorMetricValueTestData struct {
 
 //test for authparams and such
 
-var testAzMonitorMetadata = []getAzMonitorMetricValueTestData{
+/*var testAzMonitorMetadata = []getAzMonitorMetricValueTestData{
 	// nothing passed
 	{&azureMonitorMetadata{}, true, testAzMonitorResolvedEnv, map[string]string{}},
 	// properly formed
-    {&azureMonitorMetadata{resourceURI: "test/resource/uri", tenantID: "123", subscriptionID: "456", resourceGroupName: "test", name: "metric", aggregationInterval: "0:15:0", aggregationType: "Average", clientID: "789", clientPassword: "1234", targetValue: 5}, false, testAzMonitorResolvedEnv, map[string]string{}},
-    // no optional parameters
+	{&azureMonitorMetadata{resourceURI: "test/resource/uri", tenantID: "123", subscriptionID: "456", resourceGroupName: "test", name: "metric", aggregationInterval: "0:15:0", aggregationType: "Average", clientID: "789", clientPassword: "1234", targetValue: 5}, false, testAzMonitorResolvedEnv, map[string]string{}},
+	// no optional parameters
 	{&azureMonitorMetadata{resourceURI: "test/resource/uri", tenantID: "123", subscriptionID: "456", resourceGroupName: "test", name: "metric", aggregationType: "Average", clientID: "789", clientPassword: "1234", targetValue: 5}, false, testAzMonitorResolvedEnv, map[string]string{}},
 	// incorrectly formatted resourceURI
 	{&azureMonitorMetadata{resourceURI: "bad/format", tenantID: "123", subscriptionID: "456", resourceGroupName: "test", name: "metric", aggregationInterval: "0:15:0", aggregationType: "Average", clientID: "789", clientPassword: "1234", targetValue: 5}, true, testAzMonitorResolvedEnv, map[string]string{}},
 	// improperly formatted aggregationInterval
 	{&azureMonitorMetadata{resourceURI: "test/resource/uri", tenantID: "123", subscriptionID: "456", resourceGroupName: "test", name: "metric", aggregationInterval: "0:1", aggregationType: "Average", clientID: "789", clientPassword: "1234", targetValue: 5}, true, testAzMonitorResolvedEnv, map[string]string{}},
 	// missing resourceURI
-	{&azureMonitorMetadata{resourceURI: "", tenantID: "123", subscriptionID: "456", resourceGroupName: "test", name: "metric", aggregationInterval: "0:15:0", aggregationType: "Average", clientID: "789", clientPassword: "1234", targetValue: 5}, true, testAzMonitorResolvedEnv, map[string]string{}},
+	{&azureMonitorMetadata{tenantID: "123", subscriptionID: "456", resourceGroupName: "test", name: "metric", aggregationInterval: "0:15:0", aggregationType: "Average", clientID: "789", clientPassword: "1234", targetValue: 5}, true, testAzMonitorResolvedEnv, map[string]string{}},
 	// missing tenantID
 	{&azureMonitorMetadata{resourceURI: "test/resource/uri", subscriptionID: "456", resourceGroupName: "test", name: "metric", aggregationInterval: "0:15:0", aggregationType: "Average", clientID: "789", clientPassword: "1234", targetValue: 5}, true, testAzMonitorResolvedEnv, map[string]string{}},
 	// missing subscriptionID
@@ -141,5 +138,5 @@ func TestGetAzureMetricValue(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "illegal base64") {
 		t.Error("Expected error to contain base64 error message, but got", err.Error())
-	}*/
-}
+	}
+}*/
