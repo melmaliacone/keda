@@ -1,6 +1,6 @@
 module github.com/kedacore/keda
 
-go 1.13.1
+go 1.14
 
 // Required deps for operator-sdk v0.11.0 <-> kubernetes-incubator/custom-metrics-apiserver on kubernetes-1.14.1
 replace (
